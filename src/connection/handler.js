@@ -561,6 +561,8 @@ async function requestHandler(req, res) {
     if (req.method === 'PATCH') {
       if (!player) player = new VoiceConnection(guildId, client)
 
+      console.log("buffer", buffer)
+
       if (buffer.voice !== undefined) {
         if (!buffer.voice.endpoint || !buffer.voice.token || !buffer.voice.sessionId) {
           debugLog('voice', 1, { params: parsedUrl.pathname, headers: req.headers, body: buffer, error: `Invalid voice object.` })
@@ -577,6 +579,7 @@ async function requestHandler(req, res) {
         player.updateVoice(buffer.voice)
 
         if (player.cache.track) {
+          console.log(`[NODELINK - HANDLER] :: isCachedTrackPresent: ${!!player.cache.track}`)
           player.play(player.cache.track, decodeTrack(player.cache.track), false)
 
           player.cache.track = null

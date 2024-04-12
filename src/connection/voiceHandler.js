@@ -50,6 +50,7 @@ class VoiceConnection {
     this.connection.on('speakStart', (userId, ssrc) => inputHandler.handleStartSpeaking(ssrc, userId, this.config.guildId))
 
     this.connection.on('stateChange', async (oldState, newState) => {
+      console.log(`[voice handler - ${this.connection.guildId}] :: oldState: `, oldState, " :: newState: ", newState)
       switch (newState.status) {
         case 'disconnected': {
           debugLog('websocketClosed', 2, { track: this.config.track?.info, exception: constants.VoiceWSCloseCodes[newState.closeCode] })
@@ -58,7 +59,21 @@ class VoiceConnection {
 
           this.connection.destroy()
           this.connection = null
+          const beforeStoppedState = { config: this.config, cache: this.cache }
+          console.log(`Before Updating Config & cache :: `, this.config, "cache: ", this.cache)
           this._stopTrack()
+
+          this.cache = {
+            ...this.cache,
+            ...Object.assign(beforeStoppedState.cache, beforeStoppedState.config.track ? { track: beforeStoppedState.config.track.encoded } : {})
+          };
+
+          this.config = {
+            ...this.config,
+            track: beforeStoppedState.config.track,
+          }
+
+          console.log(`Updated Config & cache :: `, this.config, "cache: ", this.cache)
 
           this.client.ws.send(JSON.stringify({
             op: 'event',
@@ -165,7 +180,10 @@ class VoiceConnection {
       endpoint: buffer.endpoint
     })
 
-    if (!this.connection.ws) this.connection.connect()
+    if (!this.connection.ws) {
+      console.log(`[NODELINK - voiceHandler] :: connection websocket not present, connecting via connection#connect`)
+      this.connection.connect()
+    }
   }
 
   destroy() {
